@@ -1,0 +1,52 @@
+name: Deploy to homeport
+description: Ship a compiled binary to a homeport box. No secrets — authentication is a per-run OIDC token.
+author: homeport
+
+branding:
+  icon: upload-cloud
+  color: blue
+
+inputs:
+  app:
+    description: The app to deploy, as registered with homeport.
+    required: true
+  artifact:
+    description: Path to the compiled Linux binary to ship.
+    required: true
+  api-url:
+    description: The homeport API.
+    required: false
+    default: https://api.homeport.sh
+  audience:
+    description: >-
+      The OIDC audience to request. Must match what the API expects. Never use
+      GitHub's default audience: it is the repository owner's URL, which a
+      token minted for an unrelated service also satisfies.
+    required: false
+    default: https://api.homeport.sh
+  timeout:
+    description: Seconds to wait for the deploy to finish before giving up.
+    required: false
+    default: "600"
+
+outputs:
+  deployment-id:
+    description: The deployment's identifier.
+    value: ${{ steps.deploy.outputs.deployment-id }}
+  status:
+    description: Its final status.
+    value: ${{ steps.deploy.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy
+      id: deploy
+      shell: bash
+      env:
+        HOMEPORT_APP: ${{ inputs.app }}
+        HOMEPORT_ARTIFACT: ${{ inputs.artifact }}
+        HOMEPORT_API: ${{ inputs.api-url }}
+        HOMEPORT_AUDIENCE: ${{ inputs.audience }}
+        HOMEPORT_TIMEOUT: ${{ inputs.timeout }}
+      run: ${{ github.action_path }}/deploy.sh

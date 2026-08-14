@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: shellcheck
+        run: shellcheck deploy.sh test/run.sh
+
+      # Runs deploy.sh against a fake API and a fake OIDC endpoint. It cannot
+      # prove the action against a real control plane, but it proves the
+      # protocol and every failure path — which is where a deploy script
+      # actually goes wrong.
+      - name: protocol tests
+        run: ./test/run.sh
