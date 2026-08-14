@@ -6,7 +6,9 @@
 # code, a swallowed reason, a success reported before anything shipped.
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+# Guarded: this script does not set -e, so a failed cd would silently run the
+# suite from wherever the caller happened to be.
+cd "$(dirname "$0")/.." || exit 1
 ROOT=$(pwd)
 PASS=0
 FAIL=0
