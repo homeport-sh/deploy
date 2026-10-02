@@ -95,6 +95,16 @@ expect_fail "an unauthorised repository is told so" "not authorised to deploy"
 run box-not-ready "$WORK/server"
 expect_fail "a box that is not ready is reported" "box is not ready"
 
+# No app named: the token's repository and branch say which environment.
+run happy "$WORK/server" HOMEPORT_APP=
+expect_ok "a deploy needs no app name" "is live"
+
+# 409 means several things now; the API's own reason reaches the job log.
+run monorepo "$WORK/server" HOMEPORT_APP=
+expect_fail "a monorepo is told to name its app" "set app: in the workflow"
+run hosted "$WORK/server"
+expect_fail "an environment homeport builds says so" "switch its build source to CI"
+
 run bad-artifact "$WORK/server"
 expect_fail "a rejected artifact carries the API's reason" "does not match the box architecture"
 

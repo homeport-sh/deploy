@@ -71,7 +71,14 @@ class Handler(BaseHTTPRequestHandler):
                 sent = json.loads(body)
             except ValueError:
                 return self._json(400, {"error": "malformed request body"})
-            if sent.get("app") != "website":
+            # the API targets the environment of the token's branch; an app
+            # is named only to pick between several apps of one repository
+            app = sent.get("app", "")
+            if SCENARIO == "monorepo" and app == "":
+                return self._json(409, {"error": "several apps of this repository follow this branch; set app: in the workflow"})
+            if SCENARIO == "hosted":
+                return self._json(409, {"error": "homeport builds this environment from its pushes; switch its build source to CI to deploy from a workflow"})
+            if app not in ("", "website"):
                 return self._json(403, {"error": "not authorized for this app"})
             return self._json(201, {
                 "deployment_id": "d-1",

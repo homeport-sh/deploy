@@ -24,7 +24,7 @@ for tool in curl jq; do
   command -v "$tool" >/dev/null || die "$tool is required but not installed"
 done
 
-: "${HOMEPORT_APP:?app is required}"
+: "${HOMEPORT_APP:=}" # optional: only a repository with several apps names one
 : "${HOMEPORT_ARTIFACT:?artifact is required}"
 : "${HOMEPORT_API:?api-url is required}"
 : "${HOMEPORT_AUDIENCE:?audience is required}"
@@ -79,16 +79,25 @@ explain() { # <body> — the API's public reason, or the raw body
   printf '%s' "$1" | jq -r '.error // empty' 2>/dev/null || printf '%s' "$1"
 }
 
-note "Opening a deployment for ${HOMEPORT_APP}…"
-response=$(api_call "$OIDC_TOKEN" POST /v1/deployments "$(jq -nc --arg app "$HOMEPORT_APP" '{app:$app}')")
+# The deploy lands on the environment whose branch this run is on: the token
+# says which repository and branch. Only a repository holding several apps
+# names one.
+target=${HOMEPORT_APP:-"this branch's environment"}
+note "Opening a deployment for ${target}…"
+if [[ -n $HOMEPORT_APP ]]; then
+  request=$(jq -nc --arg app "$HOMEPORT_APP" '{app:$app}')
+else
+  request='{}'
+fi
+response=$(api_call "$OIDC_TOKEN" POST /v1/deployments "$request")
 code=$(status_of "$response")
 payload=$(body_of "$response")
 
 case $code in
   201) ;;
   401) die "the API rejected this run's token: $(explain "$payload")" ;;
-  403) die "this repository is not authorised to deploy '${HOMEPORT_APP}' — check the app and the branch" ;;
-  409) die "the box is not ready: $(explain "$payload")" ;;
+  403) die "this repository is not authorised to deploy ${target} — check that an environment follows this branch" ;;
+  409) die "$(explain "$payload")" ;;
   *)   die "opening the deployment failed (HTTP $code): $(explain "$payload")" ;;
 esac
 
@@ -149,7 +158,7 @@ while (( $(date +%s) < deadline )); do
   case $status in
     live)
       printf 'status=live\n' >>"${GITHUB_OUTPUT:-/dev/null}"
-      note "Deployed. ${HOMEPORT_APP} is live."
+      note "Deployed. ${target} is live."
       exit 0
       ;;
     failed)

@@ -8,8 +8,11 @@ branding:
 
 inputs:
   app:
-    description: The app to deploy, as registered with homeport.
-    required: true
+    description: >-
+      Which app, only in a repository that holds several. Otherwise leave it
+      out: the deploy lands on the environment that follows this run's branch.
+    required: false
+    default: ""
   artifact:
     description: Path to the compiled Linux binary to ship.
     required: true
