@@ -24,9 +24,12 @@ jobs:
 
       - uses: homeport-sh/deploy@v1
         with:
-          app: my-app
           artifact: ./server
 ```
+
+There's no app to name either: the deploy lands on the environment that
+follows the branch this run is on (`main` → production, `staging` →
+staging). Only a repository holding several apps says which, with `app:`.
 
 Note what is missing: **`secrets:`**. There is no deploy key to paste, nothing
 to rotate, and nothing in your repository for anyone to steal.
@@ -62,7 +65,7 @@ app does not come up, the job fails with the reason the box gave.
 
 | | | |
 | --- | --- | --- |
-| `app` | **required** | The app to deploy, as registered with homeport. |
+| `app` | — | Which app, only in a repository that holds several. Otherwise the environment following this run's branch. |
 | `artifact` | **required** | Path to the compiled Linux binary. |
 | `api-url` | `https://api.homeport.sh` | The homeport API. |
 | `audience` | `https://api.homeport.sh` | The OIDC audience to request. |
@@ -82,8 +85,9 @@ only at homeport.
 - **A Linux binary matching your box's architecture.** The action checks for
   ELF magic before uploading, so a macOS build fails in a second rather than
   after an upload; the architecture itself is checked on arrival.
-- The app must already exist in homeport, and the branch you are pushing must
-  be one it permits.
+- An environment in homeport must follow the branch you are pushing, with its
+  build source set to **CI**. An environment homeport builds from its pushes
+  refuses uploads, so nothing deploys twice.
 
 ## Why not a deploy key
 
